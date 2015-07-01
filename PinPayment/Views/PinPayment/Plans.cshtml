@@ -1,0 +1,45 @@
+﻿@model IEnumerable<PinPayment.Models.ViewModel.Plans>
+
+@{
+    ViewBag.Title = "Plans";
+}
+
+<h2>Plans</h2>
+<table class="table">
+    <tr>
+        <th>
+            @Html.DisplayNameFor(model => model.Name)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Amount)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Type)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.ServiceLevel)
+        </th>
+        <th></th>
+    </tr>
+
+@foreach (var item in Model) {
+    <tr>
+        <td>
+            @Html.DisplayFor(modelItem => item.Name)
+        </td>
+        <td>
+            @Html.DisplayFor(modelItem => item.Amount)
+        </td>
+        <td>
+            @Html.DisplayFor(modelItem => item.Type)
+        </td>
+        <td>
+            @Html.DisplayFor(modelItem => item.ServiceLevel)
+        </td>
+        <td>
+            @*<td><a href="@Url.Action("CreateSubscriber","PinPayment", new { @id = item.Id })">Select Subscription</a></td>*@
+        <td><a href="/@item.Name">Select Subscription</a></td>
+    </tr>
+}
+
+</table>
