@@ -23,40 +23,8 @@ namespace PinPayment.Controllers
         // GET: PinPayment
         public ActionResult Index()
         {
-            WebRequest myReq = WebRequest.Create("https://subs.pinpayments.com/api/v4/vipin-kumar-kindlebit-com-test/subscription_plans.xml");
-            //string credentials = "13cb12868229a30552863504f71b019d98bdd747";
-            string credentials = ConfigurationManager.AppSettings["apiToken"].ToString();
-            CredentialCache mycache = new CredentialCache();
-            myReq.Headers["Authorization"] = "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials));
-            myReq.ContentType = "Application/json;";
-            myReq.Method = "Get";
-            WebResponse wr = myReq.GetResponse();
-            Stream receiveStream = wr.GetResponseStream();
-            StreamReader reader = new StreamReader(receiveStream, Encoding.UTF8);
-            XmlDocument xmlDoc = new XmlDocument();
-            xmlDoc.Load(wr.GetResponseStream());
-            XmlSerializer serializer = new XmlSerializer(typeof(subscriptionplans));
-            StringReader rdr = new StringReader(xmlDoc.InnerXml);
-           
-            subscriptionplans _subscriptionplans = (subscriptionplans)serializer.Deserialize(rdr);
-          
-
-
-            List<Plans> planlist = new List<Plans>();
-            foreach (var item in _subscriptionplans.subscriptionplan)
-            {
-
-
-                Plans plans = new Plans();
-                plans.Amount = item.amount.Value;
-                plans.Name = item.name;
-                plans.Type = item.plantype;
-                plans.Id = item.id.Value;
-                plans.ServiceLevel = item.featurelevel;
-                planlist.Add(plans);
-            }
-            TempData["Plans"] = planlist;
-            return View("Plans", planlist);            
+      
+            return View("Plans",GetPlans());            
         }
 
         public string CreateSubscriberApi(string url, string xml, string method)
@@ -152,7 +120,7 @@ namespace PinPayment.Controllers
         [Route("{id}")]
         public ActionResult CreateSubscriber(string id)
         {
-            IList<Plans> plans = (IList<Plans>)TempData["Plans"];
+            IList<Plans> plans = GetPlans();
             var f = plans.FirstOrDefault(x => x.Name == id);
             SiteSubscriber obj = new SiteSubscriber();
             obj.SubscriptionId = f.Id.ToString();
@@ -275,6 +243,48 @@ namespace PinPayment.Controllers
             CustomerModel cust = new CustomerModel();
 
             return Json(cust.IsEmailExist(Email), JsonRequestBehavior.AllowGet);
+        }
+
+
+        public IList<Plans> GetPlans()
+        {
+            //WebRequest myReq = WebRequest.Create("https://subs.pinpayments.com/api/v4/vipin-kumar-kindlebit-com-test/subscription_plans.xml");
+            string site = ConfigurationManager.AppSettings["apiUrl"].ToString();
+            string url = string.Format("https://subs.pinpayments.com/api/v4/{0}/subscription_plans.xml", site);
+            WebRequest myReq = WebRequest.Create(url);
+            //string credentials = "13cb12868229a30552863504f71b019d98bdd747";
+            string credentials = ConfigurationManager.AppSettings["apiToken"].ToString();
+            CredentialCache mycache = new CredentialCache();
+            myReq.Headers["Authorization"] = "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials));
+            myReq.ContentType = "Application/json;";
+            myReq.Method = "Get";
+            WebResponse wr = myReq.GetResponse();
+            Stream receiveStream = wr.GetResponseStream();
+            StreamReader reader = new StreamReader(receiveStream, Encoding.UTF8);
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.Load(wr.GetResponseStream());
+            XmlSerializer serializer = new XmlSerializer(typeof(subscriptionplans));
+            StringReader rdr = new StringReader(xmlDoc.InnerXml);
+
+            subscriptionplans _subscriptionplans = (subscriptionplans)serializer.Deserialize(rdr);
+
+
+
+            List<Plans> planlist = new List<Plans>();
+            foreach (var item in _subscriptionplans.subscriptionplan)
+            {
+
+
+                Plans plans = new Plans();
+                plans.Amount = item.amount.Value;
+                plans.Name = item.name;
+                plans.Type = item.plantype;
+                plans.Id = item.id.Value;
+                plans.ServiceLevel = item.featurelevel;
+                planlist.Add(plans);
+            }
+            //TempData["Plans"] = planlist;
+            return planlist;
         }
     }
 }
