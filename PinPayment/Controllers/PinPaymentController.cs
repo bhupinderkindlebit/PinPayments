@@ -20,271 +20,302 @@ namespace PinPayment.Controllers
 {
     public class PinPaymentController : Controller
     {
-        // GET: PinPayment
+        #region
+        //Variable declaration
+        WebRequest myReq = null;
+        CredentialCache mycache = null;
+        Stream requestStream = null;
+        WebResponse wr = null;
+        Stream receiveStream = null;
+        StreamReader reader = null;
+        List<Plans> planlist = new List<Plans>();
+        XmlSerializer serializer = null;
+        StringReader rdr = null;
+        subscriptionplans _subscriptionplans = null;
+        XmlDocument xmlDoc = null;
+        string xml = "";
+        string site = "";
+        string url = "";
+        byte[] bytes;
+        string credentials = ConfigurationManager.AppSettings["apiToken"].ToString();
+        #endregion
+        #region
+        //Action methods
         public ActionResult Index()
         {
-      
-            return View("Plans",GetPlans());            
-        }
-
-        public string CreateSubscriberApi(string url, string xml, string method)
-        {             
-            WebRequest myReq = WebRequest.Create(url);
-            string credentials = ConfigurationManager.AppSettings["apiToken"].ToString();
-            CredentialCache mycache = new CredentialCache();
-            myReq.Headers["Authorization"] = "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials));
-            byte[] bytes;
-            myReq.ContentType = "text/xml; encoding='utf-8'";            
-            bytes = System.Text.Encoding.ASCII.GetBytes(xml);
-            myReq.ContentLength = bytes.Length;
-            myReq.Method = method;
-            Stream requestStream = myReq.GetRequestStream();
-            requestStream.Write(bytes, 0, bytes.Length);
-            requestStream.Close();
-            WebResponse wr = myReq.GetResponse();
-            Stream receiveStream = wr.GetResponseStream();
-            StreamReader reader = new StreamReader(receiveStream, Encoding.UTF8);
-            string content = reader.ReadToEnd();
-        
-      
-            return content;
-        }
-        public string Payment(string url, string xml, string method, string token)
-        {
-            WebRequest myReq = WebRequest.Create(url);
-            string credentials = ConfigurationManager.AppSettings["apiToken"].ToString();
-            CredentialCache mycache = new CredentialCache();
-            myReq.Headers["Authorization"] = "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials));
-            byte[] bytes;
-            myReq.ContentType = "text/xml; encoding='utf-8'";            
-            bytes = System.Text.Encoding.ASCII.GetBytes(xml);
-            myReq.ContentLength = bytes.Length;
-            myReq.Method = method;
-            Stream requestStream = myReq.GetRequestStream();
-            requestStream.Write(bytes, 0, bytes.Length);
-            requestStream.Close();
-            WebResponse wr = myReq.GetResponse();
-            Stream receiveStream = wr.GetResponseStream();
-            StreamReader reader = new StreamReader(receiveStream, Encoding.UTF8);
-            string content = reader.ReadToEnd();
-            return content;
-
+            return View("Plans", GetPlans());
         }
         public ActionResult xposeSubscriber(string url, string xml, string method)
         {
-            //string url = "https://subs.pinpayments.com/api/v4/vipin-kumar-kindlebit-com-test/subscribers.xml";
-            WebRequest myReq = WebRequest.Create(url);
-            string credentials = ConfigurationManager.AppSettings["apiToken"].ToString();
-            CredentialCache mycache = new CredentialCache();
-            myReq.Headers["Authorization"] = "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials));
-            myReq.ContentType = "Application/json;";
-            if (method.ToLower() == "post")
+            try
             {
-                byte[] bytes;
-                myReq.ContentType = "text/xml; encoding='utf-8'";
-                bytes = System.Text.Encoding.ASCII.GetBytes(xml);
-                myReq.ContentLength = bytes.Length;
-                myReq.Method = method;
-                Stream requestStream = myReq.GetRequestStream();
-                requestStream.Write(bytes, 0, bytes.Length);
-                requestStream.Close();
-            }
-            WebResponse wr = myReq.GetResponse();
-            Stream receiveStream = wr.GetResponseStream();
-            StreamReader reader = new StreamReader(receiveStream, Encoding.UTF8);
-            XmlDocument xmlDoc = new XmlDocument();
-            xmlDoc.Load(wr.GetResponseStream());
-            XmlSerializer serializer = new XmlSerializer(typeof(subscriptionplans));
-            StringReader rdr = new StringReader(xmlDoc.InnerXml);
-            subscriptionplans _subscriptionplans = (subscriptionplans)serializer.Deserialize(rdr);
+                myReq = WebRequest.Create(url);
+                mycache = new CredentialCache();
+                myReq.Headers["Authorization"] = "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials));
+                myReq.ContentType = "Application/json;";
+                if (method.ToLower() == "post")
+                {
+                    byte[] bytes;
+                    myReq.ContentType = "text/xml; encoding='utf-8'";
+                    bytes = System.Text.Encoding.ASCII.GetBytes(xml);
+                    myReq.ContentLength = bytes.Length;
+                    myReq.Method = method;
+                    requestStream = myReq.GetRequestStream();
+                    requestStream.Write(bytes, 0, bytes.Length);
+                    requestStream.Close();
+                }
+                wr = myReq.GetResponse();
+                receiveStream = wr.GetResponseStream();
+                reader = new StreamReader(receiveStream, Encoding.UTF8);
+                xmlDoc = new XmlDocument();
+                xmlDoc.Load(wr.GetResponseStream());
+                serializer = new XmlSerializer(typeof(subscriptionplans));
+                rdr = new StringReader(xmlDoc.InnerXml);
+                _subscriptionplans = (subscriptionplans)serializer.Deserialize(rdr);
+                foreach (var item in _subscriptionplans.subscriptionplan)
+                {
+                    Plans plans = new Plans();
+                    plans.Amount = item.amount.Value;
+                    plans.Name = item.name;
+                    plans.Type = item.plantype;
+                    plans.Id = item.id.Value;
+                    plans.ServiceLevel = item.featurelevel;
+                    planlist.Add(plans);
+                }
+                string content = reader.ReadToEnd();
 
-            List<Plans> planlist = new List<Plans>();
-            foreach (var item in _subscriptionplans.subscriptionplan)
+                return View("Plans", planlist);
+            }
+            catch (Exception ex)
             {
-
-                
-                Plans plans = new Plans();
-                plans.Amount = item.amount.Value;
-                plans.Name = item.name;
-                plans.Type = item.plantype;
-                plans.Id = item.id.Value;
-                plans.ServiceLevel = item.featurelevel;
-                
-                planlist.Add(plans);
+                return null;
             }
-            string content = reader.ReadToEnd();
-           
-            return View("Plans", planlist);
         }
-
         [Route("{id}")]
         public ActionResult CreateSubscriber(string id)
         {
-            IList<Plans> plans = GetPlans();
-            var f = plans.FirstOrDefault(x => x.Name == id);
-            SiteSubscriber obj = new SiteSubscriber();
-            obj.SubscriptionId = f.Id.ToString();
-            return View("CreateSubscriber",obj);
+            try
+            {
+                IList<Plans> plans = GetPlans();
+                var f = plans.FirstOrDefault(x => x.Name == id);
+                SiteSubscriber obj = new SiteSubscriber();
+                obj.SubscriptionId = f.Id.ToString();
+                return View("CreateSubscriber", obj);
+            }
+            catch
+            {
+                return null;
+            }
         }
-
         [HttpPost]
         [Route("{id}")]
         public ActionResult CreateSubscriber(SiteSubscriber obj)
         {
-            Guid guid = new Guid();
-            Random rnmd=new Random ();            
-            PinPaymentsDbEntities db = new PinPaymentsDbEntities();
-            if(ModelState.IsValid)
+            if (ModelState.IsValid)
             {
-                //if (db.tblCustomers.Where(x => x.Email == obj.Email).Count() > 0)
-                //{
-                //    ModelState.AddModelError("DuplicateEmail", "User already exists");
-                //    obj.SubscriptionId = obj.SubscriptionId;
-                //    return View(obj);
-                //}
-                //else
-                //{
-
+                Guid guid = new Guid();
+                Random rnmd = new Random();
+                PinPaymentsDbEntities db = new PinPaymentsDbEntities();
+                if (ModelState.IsValid)
+                {
                     tblCustomer obtbl = new tblCustomer();
-                    //if ((db.tblCustomers.ToList().Count() > 0) && db.tblCustomers.ToList()!=null)
-                    //{
-                    //    obtbl.CustmerId = (db.tblCustomers.Max(m => m.Id) + 1).ToString();
-                    //}
-                    //else
-                    //{
-                    //    obtbl.CustmerId="1008";
-                    //}
-                    
-                    //obtbl.FirstName = obj.FirstName;
-                    //obtbl.LastName = obj.LastName;
-                    //obtbl.Password = obj.Password;
-                    //obtbl.Email = obj.Email;
-                    //db.tblCustomers.Add(obtbl);
-                    //db.SaveChanges();
                     CustomerModel model = new CustomerModel();
-                    int cutomerid =model.AddCustomer(obj);
-                    string xml = "<subscriber><customer-id>" + cutomerid + "</customer-id><screen-name>" + obj.FirstName + obj.LastName + "</screen-name></subscriber>";
-                    string site = ConfigurationManager.AppSettings["apiUrl"].ToString();
-                    string url = string.Format("https://subs.pinpayments.com/api/v4/{0}/subscribers.xml", site);
+                    int cutomerid = model.AddCustomer(obj);
+                    xml = "<subscriber><customer-id>" + cutomerid + "</customer-id><screen-name>" + obj.FirstName + obj.LastName + "</screen-name></subscriber>";
+                    site = ConfigurationManager.AppSettings["apiUrl"].ToString();
+                    url = string.Format("https://subs.pinpayments.com/api/v4/{0}/subscribers.xml", site);
                     CreateSubscriberApi(url, xml, "Post");
-                    string token = GenrateInvoice(obj.SubscriptionId, cutomerid.ToString(), obj.FirstName, obj.Email);
-                   
-                    return RedirectToAction("AddCardDetail", new {firstName=obj.FirstName,lastName=obj.LastName,token = token });
-
-                //}
-                //return View("CreateSubscriber");
-
+                    CardDetail obj1 = new CardDetail();
+                    obj1.token = GenrateInvoice(obj.SubscriptionId, cutomerid.ToString(), obj.FirstName, obj.Email);
+                    obj1.firstName = obj.FirstName;
+                    obj1.lastName = obj.Email;
+                    ViewBag.year = DBCommon.BindYear();
+                    ViewBag.month = DBCommon.BindMonth();
+                    return RedirectToAction("AddCardDetail", obj1);
+                }
+                return View("CreateSubscriber");
+            }
+            else
+            {
+                return View(obj);
             }
 
-            return View("CreateSubscriber");
         }
-
-
-
-        public string  GenrateInvoice(string subsciptionid,string customerId,string screenName,string email)
+        public ActionResult AddCardDetail(string firstName, string lastName, string token)
         {
-            string xm = "<invoice><subscription-plan-id>" + subsciptionid + "</subscription-plan-id><subscriber><customer-id>"+customerId+"</customer-id><screen-name>"+screenName+"</screen-name><email>"+email+"</email></subscriber></invoice>";
-           
-            string site = ConfigurationManager.AppSettings["apiUrl"].ToString();
-            string url = string.Format("https://subs.pinpayments.com/api/v4/{0}/invoices.xml", site);
-            
-            WebRequest myReq = WebRequest.Create(url);
-            string credentials = ConfigurationManager.AppSettings["apiToken"].ToString();
-            CredentialCache mycache = new CredentialCache();
-            myReq.Headers["Authorization"] = "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials));
-            byte[] bytes;
-            myReq.ContentType = "text/xml; encoding='utf-8'";
-            //string xml = "<subscriber><customer-id>420420420</customer-id><screen-name>sumitsharda</screen-name></subscriber>";
-            bytes = System.Text.Encoding.ASCII.GetBytes(xm);
-            myReq.ContentLength = bytes.Length;
-            myReq.Method = "POST";
-            Stream requestStream = myReq.GetRequestStream();
-            requestStream.Write(bytes, 0, bytes.Length);
-            requestStream.Close();
-            WebResponse wr = myReq.GetResponse();
-            Stream receiveStream = wr.GetResponseStream();
-            StreamReader reader = new StreamReader(receiveStream, Encoding.UTF8);
-            string content = reader.ReadToEnd();
-            XmlSerializer serializer = new XmlSerializer(typeof(invoice));
-            StringReader rdr = new StringReader(content);            
-            invoice _invoice = (invoice)serializer.Deserialize(rdr);
-            return _invoice.token;
-            
-        }
-        public ActionResult AddCardDetail(string firstName,string lastName, string token)
-        {
-            CardDetail obj = new CardDetail();
-            obj.token = token;
-            obj.firstName=firstName ;
-            obj.lastName = lastName;
-            ViewBag.year = DBCommon.BindYear();
-            ViewBag.month = DBCommon.BindMonth();
-            return View();
+            if (ModelState.IsValid)
+            {
+                CardDetail obj = new CardDetail();
+                obj.token = token;
+                obj.firstName = firstName;
+                obj.lastName = lastName;
+                ViewBag.year = DBCommon.BindYear();
+                ViewBag.month = DBCommon.BindMonth();
+                return View();
+            }
+            else
+            {
+                return View();
+            }
+
         }
         [HttpPost]
         public ActionResult AddCardDetail(CardDetail obj)
         {
-            if(ModelState.IsValid)
+            if (ModelState.IsValid)
             {
-                string xmlpayment = "<payment><account-type>credit-card</account-type><credit-card><number>" + obj.cardNumber + "</number><card-type>" + obj.cardType + "</card-type><verification-value>" + obj.verificationValue + "</verification-value><month>" + obj.month + "</month><year>" + obj.year + "</year><first-name>" + obj.firstName + "</first-name><last-name>" + obj.lastName + "</last-name></credit-card></payment>";
-
-                string site = ConfigurationManager.AppSettings["apiUrl"].ToString();
-                string url = string.Format("https://subs.pinpayments.com/api/v4/{0}/invoices/", site);
-                Payment(url + obj.token + "/pay.xml", xmlpayment, "PUT", obj.token);
-                 
+                xml = "<payment><account-type>credit-card</account-type><credit-card><number>" + obj.cardNumber + "</number><card-type>" + obj.cardType + "</card-type><verification-value>" + obj.verificationValue + "</verification-value><month>" + obj.month + "</month><year>" + obj.year + "</year><first-name>" + obj.firstName + "</first-name><last-name>" + obj.lastName + "</last-name></credit-card></payment>";
+                site = ConfigurationManager.AppSettings["apiUrl"].ToString();
+                url = string.Format("https://subs.pinpayments.com/api/v4/{0}/invoices/", site);
+                Payment(url + obj.token + "/pay.xml", xml, "PUT", obj.token);
+                return View("PaymentSuccess");
             }
-
-            return View("PaymentSuccess");
+            else
+            {
+                return View("PaymentSuccess", obj);
+            }
         }
-
-
         public ActionResult IsEmailExist(string Email)
         {
             CustomerModel cust = new CustomerModel();
-
             return Json(cust.IsEmailExist(Email), JsonRequestBehavior.AllowGet);
         }
+        #endregion
+        #region
+        //api methods
+        public string CreateSubscriberApi(string url, string xml, string method)
+        {
+            try
+            {
+                myReq = WebRequest.Create(url);
+                mycache = new CredentialCache();
+                myReq.Headers["Authorization"] = "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials));
+                myReq.ContentType = "text/xml; encoding='utf-8'";
+                bytes = System.Text.Encoding.ASCII.GetBytes(xml);
+                myReq.ContentLength = bytes.Length;
+                myReq.Method = method;
+                requestStream = myReq.GetRequestStream();
+                requestStream.Write(bytes, 0, bytes.Length);
+                requestStream.Close();
+                wr = myReq.GetResponse();
+                receiveStream = wr.GetResponseStream();
+                reader = new StreamReader(receiveStream, Encoding.UTF8);
+                return reader.ReadToEnd(); ;
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+        public string Payment(string url, string xml, string method, string token)
+        {
+            try
+            {
+                myReq = WebRequest.Create(url);
+                mycache = new CredentialCache();
+                myReq.Headers["Authorization"] = "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials));
+                myReq.ContentType = "text/xml; encoding='utf-8'";
+                bytes = System.Text.Encoding.ASCII.GetBytes(xml);
+                myReq.ContentLength = bytes.Length;
+                myReq.Method = method;
+                requestStream = myReq.GetRequestStream();
+                requestStream.Write(bytes, 0, bytes.Length);
+                requestStream.Close();
+                wr = myReq.GetResponse();
+                receiveStream = wr.GetResponseStream();
+                reader = new StreamReader(receiveStream, Encoding.UTF8);
+                return reader.ReadToEnd();
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+        public string GenrateInvoice(string subsciptionid, string customerId, string screenName, string email)
+        {
+            try
+            {
+                xml = "<invoice><subscription-plan-id>" + subsciptionid + "</subscription-plan-id><subscriber><customer-id>" + customerId + "</customer-id><screen-name>" + screenName + "</screen-name><email>" + email + "</email></subscriber></invoice>";
+                site = ConfigurationManager.AppSettings["apiUrl"].ToString();
+                string url = string.Format("https://subs.pinpayments.com/api/v4/{0}/invoices.xml", site);
+                myReq = WebRequest.Create(url);
+                mycache = new CredentialCache();
+                myReq.Headers["Authorization"] = "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials));
+                myReq.ContentType = "text/xml; encoding='utf-8'";
+                bytes = System.Text.Encoding.ASCII.GetBytes(xml);
+                myReq.ContentLength = bytes.Length;
+                myReq.Method = "POST";
+                requestStream = myReq.GetRequestStream();
+                requestStream.Write(bytes, 0, bytes.Length);
+                requestStream.Close();
+                wr = myReq.GetResponse();
+                receiveStream = wr.GetResponseStream();
+                reader = new StreamReader(receiveStream, Encoding.UTF8);
+                serializer = new XmlSerializer(typeof(invoice));
+                rdr = new StringReader(reader.ReadToEnd());
+                invoice _invoice = (invoice)serializer.Deserialize(rdr);
+                return _invoice.token;
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
 
-
+            }
+        }
         public IList<Plans> GetPlans()
         {
-            //WebRequest myReq = WebRequest.Create("https://subs.pinpayments.com/api/v4/vipin-kumar-kindlebit-com-test/subscription_plans.xml");
-            string site = ConfigurationManager.AppSettings["apiUrl"].ToString();
-            string url = string.Format("https://subs.pinpayments.com/api/v4/{0}/subscription_plans.xml", site);
-            WebRequest myReq = WebRequest.Create(url);
-            //string credentials = "13cb12868229a30552863504f71b019d98bdd747";
-            string credentials = ConfigurationManager.AppSettings["apiToken"].ToString();
-            CredentialCache mycache = new CredentialCache();
-            myReq.Headers["Authorization"] = "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials));
-            myReq.ContentType = "Application/json;";
-            myReq.Method = "Get";
-            WebResponse wr = myReq.GetResponse();
-            Stream receiveStream = wr.GetResponseStream();
-            StreamReader reader = new StreamReader(receiveStream, Encoding.UTF8);
-            XmlDocument xmlDoc = new XmlDocument();
-            xmlDoc.Load(wr.GetResponseStream());
-            XmlSerializer serializer = new XmlSerializer(typeof(subscriptionplans));
-            StringReader rdr = new StringReader(xmlDoc.InnerXml);
+            try
+            {
+                string site = ConfigurationManager.AppSettings["apiUrl"].ToString();
+                string url = string.Format("https://subs.pinpayments.com/api/v4/{0}/subscription_plans.xml", site);
+                myReq = WebRequest.Create(url);
+                mycache = new CredentialCache();
+                myReq.Headers["Authorization"] = "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials));
+                myReq.ContentType = "Application/json;";
+                myReq.Method = "Get";
+                wr = myReq.GetResponse();
+                receiveStream = wr.GetResponseStream();
+                reader = new StreamReader(receiveStream, Encoding.UTF8);
+                xmlDoc = new XmlDocument();
+                xmlDoc.Load(wr.GetResponseStream());
+                serializer = new XmlSerializer(typeof(subscriptionplans));
+                rdr = new StringReader(xmlDoc.InnerXml);
+                _subscriptionplans = new subscriptionplans();
+                using (XmlReader reade = new XmlTextReader(rdr))
+                {
+                    if (reade.Name == "nil-classes")
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        var subscriptionplanssubscriptionplans = new XmlSerializer(typeof(subscriptionplans));
+                        _subscriptionplans = subscriptionplanssubscriptionplans.Deserialize(reade) as subscriptionplans;
+                        List<Plans> planlist = new List<Plans>();
+                        foreach (var item in _subscriptionplans.subscriptionplan)
+                        {
+                            Plans plans = new Plans();
+                            plans.Amount = item.amount.Value;
+                            plans.Name = item.name;
+                            plans.Type = item.plantype;
+                            plans.Id = item.id.Value;
+                            plans.ServiceLevel = item.featurelevel;
+                            planlist.Add(plans);
+                        }
+                        return planlist;
 
-            subscriptionplans _subscriptionplans = (subscriptionplans)serializer.Deserialize(rdr);
+                    }
 
-
-
-            List<Plans> planlist = new List<Plans>();
-            foreach (var item in _subscriptionplans.subscriptionplan)
+                }
+            }
+            catch (Exception ex)
             {
 
-
-                Plans plans = new Plans();
-                plans.Amount = item.amount.Value;
-                plans.Name = item.name;
-                plans.Type = item.plantype;
-                plans.Id = item.id.Value;
-                plans.ServiceLevel = item.featurelevel;
-                planlist.Add(plans);
+                return null;
             }
-            //TempData["Plans"] = planlist;
-            return planlist;
+
+
         }
+        #endregion
     }
 }

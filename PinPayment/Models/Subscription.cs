@@ -2,14 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
+using System.Xml.Serialization;
 
 namespace PinPayment.Models
 {
 
-
     /// <remarks/>
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
-    [System.Xml.Serialization.XmlRootAttribute("subscription-plans", Namespace = "", IsNullable = false)]
+    /// [XmlRoot("NeweggAPIResponse")]
+    /// 
+    [XmlRoot("subscription-plans")]
+    //[System.Xml.Serialization.XmlRootAttribute("subscription-plans", Namespace = "", IsNullable = false)]
     public partial class subscriptionplans
     {
 
