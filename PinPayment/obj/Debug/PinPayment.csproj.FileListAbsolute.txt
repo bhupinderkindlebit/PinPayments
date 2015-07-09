@@ -215,6 +215,6 @@ F:\SumitProject\PinPayments\PinPayment\bin\Microsoft.Owin.Security.OAuth.xml
 F:\SumitProject\PinPayments\PinPayment\bin\Microsoft.Owin.Security.Google.xml
 F:\SumitProject\PinPayments\PinPayment\bin\Microsoft.Owin.Security.Twitter.xml
 F:\SumitProject\PinPayments\PinPayment\bin\Microsoft.Owin.Security.MicrosoftAccount.xml
-F:\SumitProject\PinPayments\PinPayment\obj\Debug\PinPayment.csprojResolveAssemblyReference.cache
 F:\SumitProject\PinPayments\PinPayment\obj\Debug\PinPayment.dll
 F:\SumitProject\PinPayments\PinPayment\obj\Debug\PinPayment.pdb
+F:\SumitProject\PinPayments\PinPayment\obj\Debug\PinPayment.csprojResolveAssemblyReference.cache

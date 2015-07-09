@@ -1810,7 +1810,7 @@ namespace PinPayment.Models
                 this.typeField = value;
             }
         }
-
+                                                       
         /// <remarks/>
         [System.Xml.Serialization.XmlTextAttribute()]
         public ushort Value

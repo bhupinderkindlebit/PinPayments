@@ -283,28 +283,23 @@ namespace PinPayment.Controllers
                 _subscriptionplans = new subscriptionplans();
                 using (XmlReader reade = new XmlTextReader(rdr))
                 {
-                    if (reade.Name == "nil-classes")
-                    {
-                        return null;
-                    }
-                    else
-                    {
-                        var subscriptionplanssubscriptionplans = new XmlSerializer(typeof(subscriptionplans));
-                        _subscriptionplans = subscriptionplanssubscriptionplans.Deserialize(reade) as subscriptionplans;
-                        List<Plans> planlist = new List<Plans>();
-                        foreach (var item in _subscriptionplans.subscriptionplan)
-                        {
-                            Plans plans = new Plans();
-                            plans.Amount = item.amount.Value;
-                            plans.Name = item.name;
-                            plans.Type = item.plantype;
-                            plans.Id = item.id.Value;
-                            plans.ServiceLevel = item.featurelevel;
-                            planlist.Add(plans);
-                        }
-                        return planlist;
 
+                    var subscriptionplanssubscriptionplans = new XmlSerializer(typeof(subscriptionplans));
+                    _subscriptionplans = subscriptionplanssubscriptionplans.Deserialize(reade) as subscriptionplans;
+                    List<Plans> planlist = new List<Plans>();
+                    foreach (var item in _subscriptionplans.subscriptionplan)
+                    {
+                        Plans plans = new Plans();
+                        plans.Amount = item.amount.Value;
+                        plans.Name = item.name;
+                        plans.Type = item.plantype;
+                        plans.Id = item.id.Value;
+                        plans.ServiceLevel = item.featurelevel;
+                        planlist.Add(plans);
                     }
+                    return planlist;
+
+
 
                 }
             }
