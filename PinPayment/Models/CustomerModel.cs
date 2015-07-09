@@ -23,9 +23,7 @@ namespace PinPayment.Models
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
 
-                        cmd.Parameters.Add("@FirstName", SqlDbType.VarChar).Value = customer.FirstName;
-                        cmd.Parameters.Add("@LastName", SqlDbType.VarChar).Value = customer.LastName;
-
+                        cmd.Parameters.Add("@primaryContact", SqlDbType.VarChar).Value = customer.FirstName+" "+customer.LastName;
                         cmd.Parameters.Add("@companyName", SqlDbType.VarChar).Value = customer.Company;
                         cmd.Parameters.Add("@primaryContactEmail", SqlDbType.VarChar).Value = customer.Email;
                         cmd.Parameters.Add("@password", SqlDbType.VarChar).Value = customer.Password;
@@ -52,7 +50,7 @@ namespace PinPayment.Models
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
 
-                string command = "select * from tblCustomer where Email=@Email";
+                string command = "select * from Customer where primaryContactEmail=@Email";
                 using (SqlCommand cmd = new SqlCommand(command, conn))
                 {
                     cmd.Parameters.AddWithValue("@Email", Email);
