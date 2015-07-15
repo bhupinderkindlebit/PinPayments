@@ -128,7 +128,7 @@ namespace PinPayment.Controllers
                     CardDetail obj1 = new CardDetail();
                     obj1.token = GenrateInvoice(obj.SubscriptionId, cutomerid.ToString(), obj.FirstName, obj.Email);
                     obj1.firstName = obj.FirstName;
-                    obj1.lastName = obj.Email;
+                    obj1.lastName = obj.LastName;
                     ViewBag.year = DBCommon.BindYear();
                     ViewBag.month = DBCommon.BindMonth();
                     return RedirectToAction("AddCardDetail", obj1);
@@ -164,11 +164,53 @@ namespace PinPayment.Controllers
         {
             if (ModelState.IsValid)
             {
-                xml = "<payment><account-type>credit-card</account-type><credit-card><number>" + obj.cardNumber + "</number><card-type>" + obj.cardType + "</card-type><verification-value>" + obj.verificationValue + "</verification-value><month>" + obj.month + "</month><year>" + obj.year + "</year><first-name>" + obj.firstName + "</first-name><last-name>" + obj.lastName + "</last-name></credit-card></payment>";
-                site = ConfigurationManager.AppSettings["apiUrl"].ToString();
-                url = string.Format("https://subs.pinpayments.com/api/v4/{0}/invoices/", site);
-                Payment(url + obj.token + "/pay.xml", xml, "PUT", obj.token);
-                return View("PaymentSuccess");
+                try
+                {
+                    xml = "<payment><account-type>credit-card</account-type><credit-card><number>" + obj.cardNumber + "</number><card-type>" + obj.cardType + "</card-type><verification-value>" + obj.verificationValue + "</verification-value><month>" + obj.month + "</month><year>" + obj.year + "</year><first-name>" + obj.firstName + "</first-name><last-name>" + obj.lastName + "</last-name></credit-card></payment>";
+                    site = ConfigurationManager.AppSettings["apiUrl"].ToString();
+                    url = string.Format("https://subs.pinpayments.com/api/v4/{0}/invoices/", site);
+                    string statuscode = Payment(url + obj.token + "/pay.xml", xml, "PUT", obj.token);
+                    switch (statuscode)
+                    {
+                        case "404":
+                            ModelState.AddModelError("PaymentError", "Token is invalid please try again");
+                            ViewBag.year = DBCommon.BindYear();
+                            ViewBag.month = DBCommon.BindMonth();
+                            return View();
+                            break;
+                        case "422":
+                            ModelState.AddModelError("PaymentError", "Please enter correct detail");
+                            ViewBag.year = DBCommon.BindYear();
+                            ViewBag.month = DBCommon.BindMonth();
+                            return View();
+                            break;
+                        case "403":
+                            ModelState.AddModelError("PaymentError", "Invoice is already closed");
+                            ViewBag.year = DBCommon.BindYear();
+                            ViewBag.month = DBCommon.BindMonth();
+                            return View();
+                            break;
+                        case "503":
+                            ModelState.AddModelError("PaymentError", "Timeout has been expired");
+                            ViewBag.year = DBCommon.BindYear();
+                            ViewBag.month = DBCommon.BindMonth();
+                            return View();
+                            break;
+
+
+                    }
+                    if (statuscode == "404" || statuscode == "422" || statuscode == "422" || statuscode == "403")
+                    {
+                        ModelState.AddModelError("PaymentError", "");
+                    }
+                    return View("PaymentSuccess");
+                }
+
+                catch (WebException ex)
+                {
+                    return View("PaymentFail");
+                }
+
             }
             else
             {
@@ -221,14 +263,18 @@ namespace PinPayment.Controllers
                 requestStream = myReq.GetRequestStream();
                 requestStream.Write(bytes, 0, bytes.Length);
                 requestStream.Close();
+                wr = (HttpWebResponse)myReq.GetResponse();
                 wr = myReq.GetResponse();
                 receiveStream = wr.GetResponseStream();
+
                 reader = new StreamReader(receiveStream, Encoding.UTF8);
                 return reader.ReadToEnd();
             }
-            catch (Exception ex)
+            catch (WebException we)
             {
-                return ex.Message;
+                HttpStatusCode statuscode = new HttpStatusCode();
+                statuscode = ((HttpWebResponse)we.Response).StatusCode;
+                return statuscode.ToString();
             }
         }
         public string GenrateInvoice(string subsciptionid, string customerId, string screenName, string email)

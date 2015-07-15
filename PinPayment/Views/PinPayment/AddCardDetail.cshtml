@@ -14,6 +14,7 @@
         <div class="form-horizontal">
             <h4>CardDetail</h4>
             <hr />
+            @Html.ValidationMessage("PaymentError")
             @Html.ValidationSummary(true, "", new { @class = "text-danger" })
             <div class="form-group">
                 @Html.LabelFor(model => model.accountType, htmlAttributes: new { @class = "control-label col-md-2" })

@@ -258,6 +258,7 @@
     <Content Include="Views\PinPayment\Plans.cshtml" />
     <Content Include="Views\PinPayment\PaymentSuccess.cshtml" />
     <Content Include="Views\PinPayment\Success.cshtml" />
+    <Content Include="Views\PinPayment\PaymentFail.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
